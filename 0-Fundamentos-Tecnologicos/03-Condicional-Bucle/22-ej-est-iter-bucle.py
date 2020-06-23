@@ -104,6 +104,25 @@ if correct_user == user and correct_password == password:
     print('Usuario y Contraseña correctas!')
 else:
     print('Número de intentos agotado')
+
+# Otra forma
+
+# import getpass
+# USER='admin'
+# PASSWORD='1234&'
+# MAX_ATTEMPTS=3
+# attempts=0
+# cont=True
+# while ((attempts<3) and (cont==True)):
+#     user=input("User: ")
+#     passw=getpass.getpass(prompt='Pass: ')
+#     attempts=attempts +1
+#     if (user.lower()==USER) and (passw=='1234&'):
+#         print("Acceso permitido. Nº intentos: %i" %attempts)
+#         cont=False
+#     else:
+#         print("Acceso denegado. Le quedan %i intentos" %(MAX_ATTEMPTS-attempts))
+#         cont=True
     
 print('\n-------------------------------------------------\n')
 

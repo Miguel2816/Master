@@ -225,6 +225,17 @@ nuevo_cliente = {
          "preferente": preferente
     }
 
+## Otra forma
+# cif = input ("Escribe el cif del nuevo cliente: ")
+# clientes[cif]={
+#     "nombre": input("Escribe el nombre: "),
+#     "direccion": input("Escribe el dirección: "),
+#     "comunidad": input("Escribe el comunidad: "),
+#     "pais": input("Escribe el pais: "),
+#     "tfno": input("Escribe el tfno: "),
+#     "preferente": bool(int(input("¿Preferente? (1/0)")))
+# }
+
 clientes[cif]=nuevo_cliente
 
 print("La informacion actualizada de los clientes es:", clientes)
