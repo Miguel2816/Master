@@ -1,0 +1,163 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+*Ejercicio 1*. 
+
+```{r}
+#A
+library(readr)
+matchesA <- read_csv("matchesA.csv")
+```
+
+```{r}
+#B
+media <- sum(matchesA$goldEarned)/length(matchesA$goldEarned)
+#C
+media2 <- mean(matchesA$goldEarned)
+#D
+sd <- sqrt(sum((matchesA$goldEarned-media)^2)/length(matchesA$goldEarned))
+#E
+sd2 <- sd(matchesA$goldEarned)
+# No coincide porque usa el n-1 en vez de n. Lo podemos comprobar:
+sd3 <- sqrt(sum((matchesA$goldEarned-media)^2)/(length(matchesA$goldEarned)-1))
+#F
+min_gold <- min(matchesA$goldEarned)
+max_gold <- max(matchesA$goldEarned)
+rango <- range(matchesA$goldEarned)
+#G
+quartiles <-quantile(matchesA$goldEarned)
+#H
+hist(matchesA$goldEarned)
+```
+
+*Ejercicio 2*
+
+```{r}
+kda <- (matchesA$kills+matchesA$assists)/matchesA$deaths
+```
+
+
+*Ejercicio 3*
+
+```{r}
+aggregate(x = matchesA$goldEarned, by = list(matchesA$win), FUN = "mean")
+aggregate(x = matchesA$goldEarned, by = list(matchesA$win), FUN = "sd")
+aggregate(x = matchesA$goldEarned, by = list(matchesA$win), FUN = "median")
+aggregate(x = matchesA$goldEarned, by = list(matchesA$win), FUN = "quantile")
+#Simplemente indicar que la media es mayor en las ganadas pero la sd es parecida, etc.
+```
+*Ejercicio 4*
+
+```{r}
+BoosterPacksA <- read_csv("BoosterPacksA.csv")
+c_comunes <- sum(BoosterPacksA$Com)
+c_raras <- sum(BoosterPacksA$Rare)
+c_raras_doradas <- sum(BoosterPacksA$gRare)
+c_no_doradas <- sum(BoosterPacksA$Com)+sum(BoosterPacksA$Rare)+sum(BoosterPacksA$Epic)+sum(BoosterPacksA$Leg)
+c_doradas <- sum(BoosterPacksA$gCom)+sum(BoosterPacksA$gRare)+sum(BoosterPacksA$gEpic)+sum(BoosterPacksA$gLeg)
+c_totales <- c_no_doradas + c_doradas
+
+prob_comunes <- c_comunes/c_totales
+prob_raras <- c_raras/c_totales
+prob_raras_doradas <- c_raras_doradas/c_totales
+prob_no_doradas <- c_no_doradas/c_totales
+prob_doradas <- c_doradas/c_totales
+```
+
+*Ejercicio 5*
+
+```{r}
+#A
+dbinom(1,30,prob_doradas)
+#B
+pbinom(3,30,prob_doradas)
+#C
+pbinom(15,30,prob_doradas, lower.tail = FALSE)
+```
+
+*Ejercicio 6*
+
+```{r}
+#A
+dbinom(2,12,0.32)
+#B
+1-dbinom(12,12,0.32)
+#C
+pbinom(8,12,0.32)-pbinom(3,12,0.32)
+#D
+qbinom(0.5, 12,0.32)
+```
+
+*Ejercicio 7*
+
+```{r}
+#A
+dpois(0,3)
+#B
+1-ppois(5,3)
+#C
+ppois(4,3)-ppois(1,3)
+#D
+qpois(0.5, 3)
+```
+
+*Ejercicio 8*
+
+```{r}
+#A1
+pnorm(125, 100, 16, lower.tail = FALSE)
+#A2
+pnorm(120, 100, 16) - pnorm(90, 100, 16)
+#B1
+a <- 96
+s <- 16
+n <- 50
+error <- qnorm(0.975)*s/sqrt(n)
+left <- a-error
+right <- a+error
+left
+right
+#B2
+# Sí, porque 100 cae dentro del intervalo
+```
+
+*Ejercicio 9*
+
+```{r}
+#A1
+pnorm(3100, 2950,300)
+#A2
+pnorm(2750, 2950,300)+pnorm(3250, 2950,300, lower.tail = FALSE)
+#B1
+a <- 3000
+s <- 300
+n <- 40
+error <- qnorm(0.95)*s/sqrt(n)
+left <- a-error
+right <- a+error
+left
+right
+#B2
+# No, porque la media habitual cae dentro del intervalo de Madrid.
+```
+
+*Ejercicio 10*
+
+```{r}
+#A1
+pnorm(5, 5.8,1.7)
+#A2
+pnorm(8, 5.8,1.7)-pnorm(5, 5.8,1.7)
+#B1
+a <- 6
+s <- 1.7
+n <- 35
+error <- qnorm(0.975)*s/sqrt(n)
+left <- a-error
+right <- a+error
+left
+right
+```
+
