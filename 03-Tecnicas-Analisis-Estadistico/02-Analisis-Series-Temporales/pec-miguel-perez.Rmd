@@ -1,0 +1,1221 @@
+---
+title: "PEC-Análisis-Series-Temporales"
+output: html_notebook
+---
+
+### Miguel Pérez Caro
+##### 07-02-2021
+
+Para comenzar con la realización de la PEC se cargan las librerías de las que se hará uso durante el desarrollo de la misma, se establece el directorio de trabajo para facilitar la carga de archivos cuando sea necesario y se especifica la semilla para que los resultados sean reproducibles.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(tseries)
+library(readxl)
+library(trend)
+library(ggpubr)
+library(TSA)
+library(TSstudio)
+library(fpp2)
+library(zoo)
+```
+
+```{r}
+setwd('/Users/miguel.perezibm.com/Desktop/MIGUEL/Courses/Master/03-Tecnicas-Analisis-Estadistico/02-Analisis-Series-Temporales/07-PEC')
+set.seed(16)
+```
+
+
+## Conocimiento Básicos
+
+### Generación de datos y comprensión
+
+
+Para este primer ejercicio se va a crear una serie temporal. Para ello, lo primero que se hará es generar cierta curva en función del seno, es decir, una curva estacional. La fórmula para generar esto es:
+
+y(t)=A∗sin(2∗π∗f∗t∗ϕ), donde:
+
+- Y(t) es el valor de la serie en el momento t.
+- A es la amplitud de la curva, es decir, como de lejos de 0 se va la curva.
+- f es la frecuencia, es decir, el número de oscilaciones que ocurren en cada tiempo. Esto es, como de anchas son las curvas.
+- ϕ es la fase, que nos sirve para especificar donde comienza la curva del seno (es decir, el punto inicial de la serie en t=0).
+
+
+##### a) Genera una curva de seno con las siguientes características. Convierte esta serie en un objeto ts y dibujala con la función autoplot() de la libreria forecast.
+
+- Longitud n=100.
+- Amplitud A=3.
+- Frecuencia f=1/12.
+
+```{r}
+# Se establecen las características
+phi <- 1
+f <- 1/12
+A <- 3
+# Se crea la serie
+x <- A*sin(2*pi*1:100*f*phi)
+serie_a <- ts(x, frequency = 12)
+autoplot(serie_a)
+```
+Para la realización de este apartado se hace uso de la función ts para convertir a serie temporal el resultado de aplicar los parámetros a la ecuación del apartado. Para conseguir la longitud 100 se incluye la variable tiempo como 1:100 de forma que se calcula el resultado para todos los valores de t entre 1 y 100.
+
+
+##### b) Lo normal en series temporales es no encontrar este tipo de curvas tan marcadas y sin ruido, es por ello que se introduce la variables Remainder o, en la ecuación, ϵ(t). Así, introduciendo este ruido la serie temporal queda definida por: y(t)=A∗sin(2∗π∗f∗t∗ϕ)+ϵ(t) donde ϵ(t) es una variable de error.
+
+
+####### Generar un error basado en la distribución uniforme entre -1 o 1
+
+```{r}
+# Se genera el ruido uniforme
+ruido_uniforme <- runif(100, min = -1, max = 1)
+```
+
+
+####### Generar un error basado en la distribución normal con media 0 y desviación típica 1
+
+```{r}
+# Se genera el ruido normal
+ruido_normal <- rnorm(100, mean = 0, sd= 1)
+```
+
+
+####### Dibuja las series resultado de sumar este error a la curva seno
+
+```{r}
+serie_ruido_uniforme <- ts(x+ruido_uniforme, frequency = 12)
+autoplot(serie_ruido_uniforme)
+```
+```{r}
+serie_ruido_normal <- ts(x+ruido_normal, frequency = 12)
+autoplot(serie_ruido_normal)
+```
+```{r}
+# Serie con ambos ruidos
+serie_ruido <- ts(x+ruido_uniforme+ruido_normal, frequency = 12)
+autoplot(serie_ruido)
+```
+Gracias a las funciones rnorm y runif se pueden generar los ruidos pedidos en los diferentes subapartados. Se ha mostrado el resultado de añadir ruido uniforme, ruido normal y ambos al mismo tiempo.
+
+
+##### c) Introduce una componente tendencia en la serie temporal. Recordando la descomposición clásica de una serie temporal también hablabamos de la componente tendencia. En este apartado crearemos esta componente.
+
+Para trabajar con una serie que no incluya solo tendencia y estacionalidad, se le añade también ruido. Para ello, se ha decidido añadir el ruido normal generado en el apartado anterior.
+
+```{r}
+# Se genera la tendencia
+trend <- seq(from = 1, length.out = 100, by = 0.2)
+
+# Se crea la serie con ruido normal y tendencia
+serie_ruido_trend <- ts(x+ruido_normal+trend, frequency = 12)
+autoplot(serie_ruido_trend)
+```
+La inclusión de la tendencia y el ruido normal en la serie no hace que se aprecie menos la estacionalidad ya que los valores de tendencia que se han incluido son bajos.
+
+
+##### d) Utilizamos las funciones de autocorrelación y autocorrelación parcial para encontrar los parámetros p,q,P,Q pero también como pista para determinar si la serie tiene estacionalidad y tendencia. Realiza los siguientes subapartados.
+
+
+##### - Crea las funciones de autocorrelación y autocorrelacion parcial de la serie temporal creada. ¿Qué forma esperas que tenga el gráfico de autocorrelación? ¿Coincide con lo que sale? Explica la respuesta.
+
+Al haber creado la serie de forma artificial, es evidente que consta de estacionalidad y tendencia. Por lo tanto, el gráfico ACF debería mostrar ambas componentes, por lo que puede que disminuya lentamente hasta cero, lo que es una muestra de tendencia en la serie, y muestre comportamientos sinusoidales en sus valores, que es un indicativo de estacionalidad.
+
+```{r}
+# Obtenemos los gráficos ACF y PACF
+ggtsdisplay(serie_ruido_trend)
+```
+Con respecto a la tendencia y la estacionalidad, el gráfico ACF muestra lo comentado anteriormente. Un decaimiento lento hacia cero, claro síntoma de una tendencia muy marcada que se puede observar en la serie y valores sinusoidales que demuestran que la serie presenta estacionalidad.
+
+##### - Aplica un test para determinar si la serie es estacionaria. ¿Qué esperas que salga? ¿Coincide?
+
+A continuación se realizan los test de Dickey-Fuller aumentado y de Philips-Perron. La serie no es estacionaria por lo que el resultado debería confirmarlo. Es necesario añadir el parámetro alternative como explosive para añadir el término de tendencia en la regresión del test.
+
+```{r}
+adf.test(serie_ruido_trend, alternative = "explosive")
+pp.test(serie_ruido_trend, alternative = "explosive")
+```
+
+En este caso no se puede rechazar la hipótesis de que haya una raíz unitaria en esta serie temporal, dado que el p-valor es 0.99, y la hipótesis se rechazaría si el p-valor fuera menor que 0.05. Por lo tanto, confirma lo que se había comentado anteriormente, y la serie no es estacionaria.
+
+
+##### - Determina el parámetro d para quitar la tendencia de la serie y vuelve a aplicar el test para ver si es estacionaria. ¿Qué esperas? ¿Qué sale? Explica por que.
+
+Teniendo en cuenta como se ha generado la serie y la existencia de tendencia, se espera que sea necesaria una diferencia para quitarla. En primer lugar se calculan cuantas diferencias son necesarias para eliminar la tendencia:
+
+```{r}
+ndiffs(serie_ruido_trend)
+```
+
+La función anterior indica que es necesaria una diferencia para quitar la tendencia. Es importante destacar que ese es un valor recomendado, no significa que necesariamente sea una diferencia, y lo más conveniente en todas las situaciones es analizar los gráficos ACF y PACF. Por lo tanto, a partir del gráfico ACF generado anteriormente, se podía comprobar la existencia de tendencia en la serie y la función anterior recomienda realizar una diferencia, que se hace a continuación.
+
+```{r}
+serie_ruido_detrended <- diff(serie_ruido_trend)
+autoplot(serie_ruido_detrended)
+```
+
+Tras aplicar la diferencia se observa que se ha eliminado la tendencia de la serie. Por lo tanto, los tests deberían confirmar dicha observación. En esta ocasión, al no haber tendencia, el parámetro alternative tiene el valor de stationary.
+
+```{r}
+adf.test(serie_ruido_detrended, alternative = "stationary")
+pp.test(serie_ruido_detrended, alternative = "stationary")
+```
+
+El p-valor es menor a 0.05, en concreto es de 0.01 por lo que se puede rechazar que la serie tenga raíces unitarias. Pero no se puede confirmar que sea estacionaria ya que estos tests no tienen en cuenta la estacionalidad. Para ello vamos a comprobar el ACF de dicha serie.
+
+```{r}
+ggAcf(serie_ruido_detrended)
+```
+Se observa en el gráfico un comportamiento sinusoidal fuera del intervalo de confianza lo que demuestra que la serie no es estacionaria debido a la componente estacional.
+
+
+##### - Determina el parámetro D para quitar la estacionalidad de la serie y vuelve a aplicar el test para ver si es estacionaria. ¿Que esperas? ¿Que sale? Explica por que.
+
+Por lo visto en el gráfico anterior, es necesaria una diferenciación estacional para eliminar dicha componente. Por lo tanto, se va a realizar una diferenciación estacional sobre la serie original para comprobar si de esta forma se elimina la estacionalidad, que debería ser así y, además, puede que se consiga eliminar la tendencia de forma que con única diferenciación eliminemos ambas componentes.
+
+```{r}
+serie_ruido_unseasonable <- diff(serie_ruido_trend, lag = 12)
+autoplot(serie_ruido_unseasonable)
+```
+Sobre esta serie se comprueba si es necesario diferenciar otra vez para eliminar la tendencia.
+
+```{r}
+ndiffs(serie_ruido_unseasonable)
+```
+
+Se observa que según la función anterior no es necesario diferenciar otra vez para eliminar la tendencia. Como ya se ha comentado, lo ideal es comprobar si el ACF sigue presentando comportamientos sinusoidales fuera del intervalo de confianza y también si mantiene el decaimiento lento que mostraba el mismo gráfico de la serie sin diferenciar.
+
+
+```{r}
+ggAcf(serie_ruido_unseasonable)
+```
+Se puede comprobar que se ha eliminado la estacionalidad. Además, la gráfica de la serie no presenta tendencia.
+También es recomendable comprobar los test de estacionariedad.
+
+```{r}
+adf.test(serie_ruido_unseasonable, alternative = "stationary")
+pp.test(serie_ruido_unseasonable, alternative = "stationary")
+```
+
+Se observa que los p-valor son inferiores a 0.05, por lo que se puede rechazar la hipótesis de la existencia de raíces unitarias y confirmar que la serie es estacionaria.
+
+Por lo tanto, el parámetro D sería 1 y el parámetro d sería 0 ya que con la diferenciación estacional se elimina la tendencia.
+
+
+##### - Determina los parámetros p,q,P,Q. ¿Que resultados esperas basando en como has creado la serie? ¿Coincide con lo que sale?
+
+Para determinar los valores de p, q, P y Q es necesario generar los gráficos ACF y PACF. Estos parámetros deberían ser 0 ya que toda la serie es estacionalidad en base al seno, tendencia determinista y ruido normal. Habiendo generado el gráfico ACF en el apartado anterior, ya se comprueba que los resultados obtenidos no son los mismos que los esperados. Se comprueba nuevamente
+
+```{r}
+ggtsdisplay(serie_ruido_unseasonable)
+```
+
+En ambos gráficos se aprecia que el primer lag se encuentra en el límite del nivel de confianza para que sea significativo, pero se establecen ambos parámetros, p y q, con valor 0.
+
+En cambio en el gráfico ACF se muestra una fuerte correlación en el lag 12, por lo que el parámetro Q es 1, mientras que en el gráfico PACF también se muestra una fuerte correlación en el lag 12, por lo tanto, el parámetro P también es 1. De esta forma, según el análisis realizado, los parámetros quedarían:
+
+- p = 0
+- d = 0
+- q = 0
+- P = 1
+- D = 1
+- Q = 1
+
+Por simple comparación, se puede generar un modelo arima automático para comprobar los valores de los parámetros escogidos por el modelo.
+
+```{r}
+auto.arima(serie_ruido_trend)
+```
+
+Vemos que las diferencias se encuentran en los parámetros P y Q.
+
+### Modelización ARIMA
+
+En este ejercicio se da la serie temporal con identificación A3349873A en el set de datos retail.xlsx adjunto a esta PEC.
+
+##### a) Carga los datos y echales un vistazo. Determina con este las componentes que tenga.
+
+```{r}
+# Cargar excel
+retail <- read_excel(paste(getwd(), "/retail.xlsx", sep=""), skip = 1) %>%
+  # Seleccionar la serie correspondiente
+  select('Series ID', 'A3349873A') %>%
+  # Modificar nombres de las columnas
+  rename('Date' = 'Series ID', 'Serie' = 'A3349873A')
+```
+
+```{r}
+# Pintar la serie en un gráfico
+ggplot(retail) + 
+  geom_line(aes(x=Date, y=Serie))  + 
+  ylab("") + 
+  xlab("Fechas") + 
+  ggtitle("Retail")
+```
+Se pueden observar una clara tendencia ascendente aunque con algunos cambios y una estacionalidad multiplicativa anual muy marcada.
+Para eliminar la estacionalidad multiplicativa se puede hacer uso del logaritmo.
+
+```{r}
+ggplot(retail) + 
+  geom_line(aes(x=Date, y=log(Serie)))  + 
+  ylab("") + 
+  xlab("Fechas") + 
+  ggtitle("Retail")
+```
+Se observa que la estacionalidad tras el logaritmo es aditiva.
+
+Se va a generar la serie temporal con sus valores iniciales y tras aplicar el logaritmo:
+
+```{r}
+# Serie inicial
+retailts<- ts(retail$Serie, start = c(1982,4), frequency = 12)
+
+# Serie tras aplicar el logaritmo
+retailtslog <- ts(log(retail$Serie), start = c(1982,4), frequency = 12)
+```
+
+##### b) Si no has conseguido ver estos componentes, puedes utilizar gráficos vistos en clase para investigarlos. Tales gráficos pueden ser, aunque no solo, ggAcf, ggtsdisplay, ggseasonplot...
+
+Se continua con el análisis a partir de la serie a la que se le ha aplicado el logaritmo. En primer lugar, se visualiza la serie junto con los gráficos PACF y ACF:
+
+```{r}
+ggtsdisplay(retailtslog)
+```
+
+Los gráficos ACF y PACF ayudan a confirmar lo que se observaba en el gráfico de la serie, es decir, se observa un comportamiento periódico en el ACF y un decaimiento lento del mismo, que son claros síntomas de la presencia de estacionalidad y tendencia en la serie.
+
+Para seguir investigando la serie, se puede comprobar cuantas diferencias son necesarias para eliminar la tendencia y la estacionalidad y ver el resultado de aplicarlas.
+
+```{r}
+ndiffs(retailtslog)
+nsdiffs(retailtslog)
+```
+
+Para ambos casos parece que son necesarias una diferencia, pero se recuerda nuevamento que eso solo es una recomendación. Se puede comprobar los resultados.
+
+```{r}
+autoplot(diff(retailtslog))
+```
+Tras la diferenciación no parece haber tendencia en la serie pero si una clara estacionalidad.
+
+```{r}
+nsdiffs(diff(retailtslog))
+```
+
+Se observa que eliminando la tendencia queda una estacionalidad anual constante durante toda la serie, y sería necesario realizar una diferenciación estacional para eliminarla. Se procede a realizar la diferenciación estacional en primer lugar.
+
+```{r}
+autoplot(diff(retailtslog, lag = 12))
+```
+
+```{r}
+ndiffs(diff(retailtslog, lag = 12))
+```
+Parece que se sigue recomendando una diferencia para eliminar la tendencia. 
+
+```{r}
+ggAcf(diff(retailtslog, lag = 12))
+```
+
+Al hacer la diferenciación estacional se consigue eliminar esta componente pero tras comprobar el gráfico ACF es evidente que la serie sigue presentando tendencia y sería necesario una diferenciación adicional a la estacional.
+
+
+##### c) Divide la serie temporal en tres conjuntos entrenamiento, validación y test con la función window()
+
+- Fecha comienzo validación: Abril de 2010
+- Fecha comienzo test: Enero de 2011
+
+Se va a dividir la serie sin aplicar el logaritmo.
+
+```{r}
+retail_train <- window(retailts, start = c(1982,4), end = c(2010,3))
+retail_val <- window(retailts, start = c(2010,4), end = c(2010,12))
+retail_test <- window(retailts, start = c(2011,1), end = c(2013,12))
+```
+
+
+##### d) Crea un modelo de descomposición stl a partir de los datos de train. Determina los valores apropiados de los parámetros s.window y t.window a traves de las componentes observadas en el aparatado a) y b).
+
+El parámetro s.window controla como de rápidamente puede cambiar la componente estacional. Como en esta serie temporal, se puede apreciar que la componente estacional se mantiene constante durante toda la serie, se puede marcar el s.window como periodic para coger toda la serie.
+
+En cuanto al parámetro t.window, es el que controla las curvas de la tendencia, es decir, el número de observaciones consecutivas a usar para estimar la tendencia por el modelo. En este caso vemos que hay cambios de tendencia por lo que es necesario ajustar este parámetro. Se va a comprobar en la serie logarítmica donde se encuentran los cambios de tendencia.
+
+```{r}
+autoplot(log(retailts))
+```
+
+Se observan varios cambios de tendencia, por lo que se puede hacer el test de Pettit para detectar el punto de cambio de tendencia que ayudará a determinar el valor de t.window.
+
+Se comienza aplicando el test a toda la serie y observando los resultados.
+
+```{r}
+pettitt.test(log(retailts))
+```
+```{r}
+plot(log(retailts)) 
+abline(v = time(log(retailts))[174], col="red")
+```
+Se aprecia un cambio de tendencia en el punto marcado por el test. Como al principio de la serie no va a haber problemas con el parámetro t.window ya que el primer cambio de tendencia se produce en un punto lejano, y tras este, se observa que la tendencia permanece constante, se puede coger el final de la serie y ver que resultado devuelve el test de Pettit, ya que en el tramo final se vuelve a apreciar un claro cambio de tendencia.
+
+```{r}
+# Cogemos los últimos 144 puntos equivalente a 12 años
+pettitt.test(log(retailts)[237:381])
+```
+
+Según el test de Pettit hay un cambio de tendencia en el punto 344. Se comprueba en el gráfico.
+
+```{r}
+plot(log(retailts)) 
+abline(v = time(log(retailts))[344], col="red")
+```
+Se puede observar que hay un claro cambio de tendencia. La distancia desde ese punto hasta el final de la serie es el valor que se escoge como parámetro t.window. Esa distancia es de 37 puntos, pero se va a coger 36, ya que coincide con la duración de 3 años, por lo que se considera un valor más apropiado. Para la realización de la descomposición, se ha de seleccionar:
+
+- x: la serie temporal
+- s.window: periodic
+- t.window: 36
+- robust: como no se aprecian outliers no es necesario
+
+La descomposición se realiza únicamente sobre la parte de entrenamiento ya que es el modelo que se usará en los siguientes apartados.
+
+```{r}
+stl_retail <- stl(x = log(retail_train),
+                  s.window = "periodic",
+                  t.window = 36,
+                  robust = FALSE)
+```
+
+```{r}
+autoplot(stl_retail) + 
+  ylab("") + xlab("Fechas") + ggtitle("Descomposición")
+```
+
+Una vez creado el modelo, es aconsejable comprobar como de bien ha aprendido el modelo el comportamiento de la serie:
+
+```{r}
+df_plot <- data.frame(
+  date = retail$Date[1:336],
+  serie = log(retail_train),
+  aprendido = as.numeric(stl_retail$time.series[,1] + stl_retail$time.series[,2])
+)
+```
+
+```{r}
+df_plot %>% select(date, serie, aprendido) %>%
+  tidyr::gather(., Leyenda, value, -date) %>%
+  ggplot() + 
+  geom_line(aes(x=date, y=value, col=Leyenda)) + 
+  ylab("") + xlab("Fechas") + 
+  ggtitle("Ajuste")
+```
+Lo aprendido se ajusta bastante bien al modelo. 
+A continuación, y a modo de test, se realizan los mismos pasos pero con el parámetro t.window por defecto, que se selecciona cuando es igual a NULL, para comprobar el rendimiento del modelo.
+
+```{r}
+stl_retail_default <- stl(x = log(retail_train),
+                          s.window = "periodic",
+                          t.window = NULL,
+                          robust = FALSE)
+```
+
+```{r}
+autoplot(stl_retail_default) + 
+  ylab("") + xlab("Fechas") + ggtitle("Descomposición")
+```
+
+```{r}
+df_plot_default <- data.frame(
+  date = retail$Date[1:336],
+  serie = log(retail_train),
+  aprendido = as.numeric(stl_retail_default$time.series[,1] + stl_retail_default$time.series[,2])
+)
+```
+
+```{r}
+df_plot_default %>% select(date, serie, aprendido) %>%
+  tidyr::gather(., Leyenda, value, -date) %>%
+  ggplot() + 
+  geom_line(aes(x=date, y=value, col=Leyenda)) + 
+  ylab("") + xlab("Fechas") + 
+  ggtitle("Ajuste")
+```
+Parece que este modelo también se ajusta bastante bien. En el siguiente apartado se comprobarán los errores de ambos modelos.
+
+##### e) Crea un modelo ARIMA apropiado siguiendo la metodología vista en clase (tema 5).
+
+Para comenzar con el análisis, se vuelve a dibujar la serie.
+
+```{r}
+autoplot(retail_train)
+```
+De nuevo, es necesario hacer el logaritmo de la serie.
+Como se había comentado, se observa una clara tendencia y estacionalidad anual que se puede confirmar con un test de estacionariedad:
+
+```{r}
+adf.test(log(retail_train), alternative = "explosive")
+```
+
+No podemos rechazar la existencia de raíces unitarias y se confirma que la serie no es estacionaria.
+Comprobemos cuantas diferencias son necesarias para eliminar las componentes de estacionalidad y tendencia. 
+En primer lugar, se diferenciará la estacionalidad:
+
+```{r}
+retail_train_unseasonable <- diff(log(retail_train), lag = 12)
+autoplot(retail_train_unseasonable)
+```
+Se genera el ACF para comprobar si se ha eliminado la estacionalidad y la tendencia de la serie.
+
+```{r}
+ggAcf(retail_train_unseasonable)
+```
+Parece que la serie todavía muestra tendencia. Por lo tanto, se aplica una diferencia para quitar la tendencia:
+
+```{r}
+retail_train_unseasonable_detrended <- diff(retail_train_unseasonable)
+autoplot(retail_train_unseasonable_detrended)
+```
+Parece que se han eliminado tanto la tendencia como la estacionalidad. Para comprobarlo, se generan el ACF y los test de estacionariedad.
+
+```{r}
+ggAcf(retail_train_unseasonable_detrended)
+```
+```{r}
+adf.test(retail_train_unseasonable_detrended, alternative = 'stationary')
+pp.test(retail_train_unseasonable_detrended, alternative = 'stationary')
+```
+
+Por los resultados de los test se puede rechazar la hipótesis de la existencia de raíces unitarias y junto con el resultado del gráfico ACF, se confirma que la serie es estacionaria.
+
+Una vez que se ha conseguido que la serie sea estacionaria, se procede a buscar los valores de los parámetros:
+
+```{r}
+ggtsdisplay(retail_train_unseasonable_detrended, lag.max = 50)
+```
+
+En el gráfico ACF se aprecia que los tres primeros lags son significativos aunque el tercero en menor medida que los dos primeros y que el lag 12 también lo es, por lo que al parámetro q se le va a asignar un valor 2  y el parámetro Q sería 1. En el gráfico PACF los dos primeros lags son significativos, mientras que también lo son los lags 12, 24 y 36. Por lo tanto, el parámetro p es 2 y el parámetro P es 3. Los parámetros quedarían:
+
+- p = 2
+- d = 1
+- q = 2
+- P = 3
+- D = 1
+- Q = 1
+
+```{r}
+# Se genera el modelo Arima con los parámetros calculados
+retail_analitico <- Arima(log(retail_train), order = c(2,1,2),
+                       seasonal = c(3,1,1))
+```
+
+```{r}
+summary(retail_analitico)
+```
+
+Se comprueba si los residuos son independientes:
+
+```{r}
+ggAcf(residuals(retail_analitico))
+```
+Se aprecian únicamente dos lags que se salen del intervalo de confianza, lo que es una buena señal.
+Se realiza el test de Box-Ljung para comprobar la indendencia de los residuos
+
+```{r}
+Box.test(residuals(retail_analitico), lag = min(10, round(length(retail_train)/5)), type = "Ljung-Box")
+```
+
+La hipótesis nula del test es que los residuos son independientes, por lo que no se puede rechazar y se asume que son independientes.
+
+##### f) Crea un modelo auto.arima para la serie temporal.
+
+```{r}
+# Se genera el modelo automático
+retail_automatico <- auto.arima(log(retail_train))
+summary(retail_automatico)
+```
+
+De nuevo, es necesario comprobar si los residuos son independientes.
+
+```{r}
+ggAcf(residuals(retail_automatico))
+```
+Solo se aprecian dos lags fuera del intervalo. 
+Se genera el test de Box-Ljung para comprobar la independencia.
+
+```{r}
+Box.test(residuals(retail_automatico), lag = min(10, round(length(retail_train)/5)), type = "Ljung-Box")
+```
+Nuevamente no se puede rechazar que los residuos no sean independientes por lo que se asume que lo son.
+
+##### g) Determina cual de los tres anteriores es el mejor modelo basandote en los errores en el conjunto de validación. El horizonte de interés de predicción es de dos meses.
+
+Para definir el rendimiento de los modelos y así poder escoger el mejor de todos, se crean varias métricas y se comprueba con el conjunto de validación los errores de cada modelo.
+
+```{r}
+# Se definen las métricas de error
+
+rmse <- function(y,f) {
+  sqrt(mean((y - f)^2))
+}
+mae <- function(y,f) {
+  mean(abs(y - f))
+}
+mape <- function(y,f) {
+  mean(abs(100*(y-f)/y))
+}
+```
+
+```{r}
+# Se define un dataframe donde comparar los modelos
+
+df_errores <- data.frame(
+  iteracion = numeric(),
+  modelo = character(),
+  rmse = numeric(),
+  mae = numeric(),
+  mape = numeric()
+)
+```
+
+```{r}
+# Ejecutar el entrenamiento y predicción para 8 intervalos distintos y calcular el error
+
+for (i in 0:7) {
+  # Definir las series de entrenamiento y validación
+  # Para la serie de entrenamiento se coge en la primera iteración los 336 puntos de retail_train y por cada iteración se añade un punto más del conjunto de validación
+  tx <- ts(retailts[1:(336+i)], frequency = 12)
+  
+  # En la primera iteración se cogen los dos primeros puntos del conjunto de validación, en la segunda el segundo y tercer punto y así sucesivamente
+  tx_val <- ts(retail_val[seq(i + 1, i+2, by = 1)], frequency = 12)
+  
+  # Definir el modelo stl con los parámetros calculados
+  modelo_stl <- stl(x = log(tx),
+                  s.window = "periodic",
+                  t.window = 36,
+                  robust = FALSE)
+  # Definir el modelo stl con el parámetro t.window por defecto
+  modelo_stl_default <- stl(x = log(tx),
+                            s.window = "periodic",
+                            t.window = NULL,
+                            robust = FALSE)
+  # Definir el modelo Arima con los parámetros calculados
+  modelo_analitico <- Arima(log(tx), model = retail_analitico)
+
+  # Definir el modelo Arima automático
+  modelo_automatico <- Arima(tx, model = retail_automatico)
+  
+  # Se generan las predicciones que se hacen con un horizonte 2 ya que se pide la predicción a dos meses. En la predicción hay que tener en cuenta que algunos modelos se han calculado con el logaritmo de la serie por lo que es necesario añadir exp para obtener el valor original de la serie.
+  pred_stl <- forecast(modelo_stl, h = 2)$mean %>% as.numeric() %>% exp()
+  pred_stl_default <- forecast(modelo_stl_default, h = 2)$mean %>% as.numeric() %>% exp()
+  pred_analitico <- forecast(modelo_analitico, h=2)$mean %>% as.numeric() %>% exp()
+  pred_automatico <- forecast(modelo_automatico, h=2)$mean %>% as.numeric()
+  
+  # Se calcula el dataframe con los errores en cada iteración para cada tipo de modelo
+  df_errores <- rbind(rbind(rbind(rbind(df_errores,
+                        data.frame(
+                        iteracion = i,
+                        modelo = "stl",
+                        rmse = rmse(as.numeric(tx_val), pred_stl), 
+                        mae = mae(as.numeric(tx_val), pred_stl),
+                        mape = mape(as.numeric(tx_val), pred_stl)
+                        )),
+                        data.frame(
+                        iteracion = i,
+                        modelo = "stl_default",
+                        rmse = rmse(as.numeric(tx_val), pred_stl_default), 
+                        mae = mae(as.numeric(tx_val), pred_stl_default),
+                        mape = mape(as.numeric(tx_val), pred_stl_default)
+                        )),
+                      data.frame(
+                        iteracion = i,
+                        modelo = "analitico",
+                        rmse = rmse(as.numeric(tx_val), pred_analitico), 
+                        mae = mae(as.numeric(tx_val), pred_analitico),
+                        mape = mape(as.numeric(tx_val), pred_analitico)
+                        )),
+                      data.frame(
+                        iteracion = i, 
+                        modelo = "automatico",
+                        rmse = rmse(as.numeric(tx_val), pred_automatico), 
+                        mae = mae(as.numeric(tx_val), pred_automatico),
+                        mape = mape(as.numeric(tx_val), pred_automatico)
+                        ))
+  
+}
+```
+
+A continuación se genera un gráfico que incluye los 3 tipos de errores para cada modelo en forma de Boxplot.
+
+```{r}
+mae <- ggplot(data = df_errores, aes(y=mae)) + geom_boxplot(aes(fill=modelo))
+mape <- ggplot(data = df_errores, aes(y=mape)) + geom_boxplot(aes(fill=modelo))
+rmse <- ggplot(data = df_errores, aes(y=rmse)) + geom_boxplot(aes(fill=modelo))
+
+# Crear una figura para incluir los tres gráficos
+figure <- ggarrange(mae, mape, rmse,
+                    labels = c("mae", "mape", "rmse"),
+                    ncol = 2, nrow = 2)
+figure
+``` 
+
+Se puede observar que el modelo que tiene un mejor funcionamiento en la mayoría de las iteraciones es el stl que se ha calculado con el parámetro t.window, aunque todos los modelos parecen tener un comportamiento similar. Será el modelo STL el que se use en el siguiente apartado.
+
+##### h) Con el mejor modelo selecionado estima el error a futuro y da una predicción de los dos próximos meses.
+
+```{r}
+# Definir las métricas de error
+
+rmse <- function(y,f) {
+  sqrt(mean((y - f)^2))
+}
+mae <- function(y,f) {
+  mean(abs(y - f))
+}
+mape <- function(y,f) {
+  mean(abs(100*(y-f)/y))
+}
+```
+
+```{r}
+# Definir un dataframe para contemplar los errores
+
+df_errores_test <- data.frame(
+  iteracion = numeric(),
+  modelo = character(),
+  rmse = numeric(),
+  mae = numeric(),
+  mape = numeric()
+)
+
+
+# El conjunto de test tiene 36 puntos. Como se quiere hacer la predicción para dos meses, hay que hacer un bucle de 35 iteraciones
+  
+for (i in 0:34) {
+  # Definir las series de entrenamiento y test.
+  # Para la serie de entrenamiento se coge la suma de puntos de entrenamiento y validación que son 345 puntos y por cada iteración se añade un punto del conjunto de test.
+  tx <- ts(retailts[1:(345 + i)], frequency = 12)
+  
+  # Para el conjunto de test en la primera iteración se cogen los dos primeros puntos del conjunto de test, en la segunda el segundo y tercer punto y así sucesivamente
+  tx_test <- ts(retail_test[seq(i + 1, i+2, by = 1)], frequency = 12)
+  
+  # Generar el modelo stl
+  modelo_stl_test <- stl(x = log(tx), 
+                    s.window = "periodic",
+                    t.window = 36,
+                    robust = FALSE)  
+  # Se genera la predicción con el horizontes a dos meses. En la predicción hay que tener en cuenta que el modelo se ha calculado con el logaritmo de la serie por lo que es necesario añadir exp para obtener el valor original de la serie.
+  pred_stl_test <- forecast(modelo_stl_test, h=2)$mean %>% as.numeric() %>% exp()
+  
+  # Generar el dataframe que recoge los errores del modelo
+  df_errores_test <- rbind(df_errores_test,
+                      data.frame(
+                        iteracion = i,
+                        modelo = "STL",
+                        rmse = rmse(as.numeric(tx_test), pred_stl_test), 
+                        mae = mae(as.numeric(tx_test), pred_stl_test),
+                        mape = mape(as.numeric(tx_test), pred_stl_test)
+                        ))
+  
+}
+```
+
+A continuación se genera un gráfico que incluye los tres errores del modelo
+
+```{r}
+# Generar los tres gráficos, uno para cada tipo de error
+mae <- ggplot(data = df_errores_test, aes(y=mae)) + geom_boxplot(aes(fill=modelo))
+mape <- ggplot(data = df_errores_test, aes(y=mape)) + geom_boxplot(aes(fill=modelo))
+rmse <- ggplot(data = df_errores_test, aes(y=rmse)) + geom_boxplot(aes(fill=modelo))
+
+# Crear una figura para incluir los tres gráficos
+figure <- ggarrange(mae, mape, rmse,
+                    labels = c("mae", "mape", "rmse"),
+                    ncol = 2, nrow = 2)
+figure
+```
+
+```{r}
+print(paste(c("El error medio en porcentaje absoluto es: ", round(mean(df_errores_test$mape),3), "%"), collapse = ""))
+```
+
+Ya se ha comprobado el error del modelo, que no es excesivamente bajo, pero tampoco es un error muy alto. Se procede a calcular la predicción.
+
+```{r}
+# Se realiza con la serie completa
+tx <- retailts
+modelo_stl_pred <- stl(x = log(tx), 
+                    s.window = "periodic",
+                    t.window = 36,
+                    robust = FALSE)
+pred_stl <- forecast(modelo_stl_pred, h=2)
+```
+
+```{r}
+autoplot(pred_stl)
+```
+Se observa que con un horizonte de dos meses apenas se aprecia la predicción. Se prueba con un año.
+
+```{r}
+tx <- retailts
+modelo_stl_pred <- stl(x = log(tx), 
+                    s.window = "periodic",
+                    t.window = 36,
+                    robust = FALSE)
+pred_stl <- forecast(modelo_stl_pred, h=12)
+```
+
+```{r}
+autoplot(pred_stl)
+```
+
+Ahora si que se aprecia la predicción. Es necesario destacar que los resultados expuestos no son la serie original sino el logaritmo de la serie ya que el modelo stl se ha calculado así. Para obtener los valores de la serie original simplemente habría que exponenciar la serie.
+
+Parece que tiene buena pinta pero destaca el salto que hay de una a otra. Para comprobar los valores de la serie, se genera un gráfico Boxplot con los valores divididos por meses.
+
+```{r}
+# Convertir la serie a dataframe
+df_retailts <- data.frame(Y=as.matrix(retailts), date=as.Date(as.yearmon(time(retailts))))
+```
+
+```{r}
+df_retailts %>% 
+  # Eliminar el primer año porque no tiene datos de todos los meses
+  slice(10:381) %>% 
+  mutate(
+    month = lubridate::month(date, label = TRUE)
+  ) %>%
+  ggplot() + 
+  geom_boxplot(aes(x=month, y=Y)) + 
+  ggtitle("Gráfico estacionalidad mensual")
+
+```
+
+Se observa que el salto siempre se produce en el mes de diciembre. Como las predicciones que se están realizando son las de los meses de Enero en adelante, tiene sentido que se aprecie ese salto en la gráfica.
+
+## Conocimientos medios
+
+En esta parte de la PEC se pide hacer un estudio avanzado de la estacionalidad de la serie calls vista en el tema 7 de la asignatura a través del periodograma y la modelización de fourier con el modelo ARIMA.
+
+En primer lugar se visualiza la serie:
+
+```{r}
+callsts <- ts(calls)
+autoplot(callsts) + ggtitle("Llamadas telefónicas")
+```
+
+Se observan diferentes estacionalidades aunque es difícil especificar más. 
+Una forma de estimar las múltiples frecuencias que aparecen en una serie temporal es hacer uso del periodograma, de forma que se puedan encontrar las frecuencias que son relevantes en la serie. A continuación, se genera el periodograma para la serie temporal calls.
+
+```{r}
+pd_calls <- periodogram(calls)
+```
+Parece que hay una frecuencia predominante y otras menos acusadas pero que también están destacadas. Se va a ordenar el periodograma en función de su fuerza que es el spec.
+
+```{r}
+# Generar un dataframe con los valores
+dd <- data.frame(freq = pd_calls$freq, spec = pd_calls$spec)
+
+# Ordenar de mayor a menor el dataframe por el valor del periodograma
+dd <- dd[order(-pd_calls$spec),]
+
+# Obtener el top 10
+top10 <- head(dd, 10)
+top10
+```
+Ahora se transformarn los valores al dominio tiempo haciendo la inversa.
+
+```{r}
+1/top10$freq
+```
+
+Según el periodograma la estacionalidad dominante es de 169 horas, que equivale a 1 semana, y hay una segunda estacionalidad de 84 horas que equivale a media semana que también se puede considerar relevante.
+
+Ahora que se han detectado las frecuencias predominantes de la serie, se pueden generar las componentes sinusoidales con las series de Fourier y utilizarlas como regresores en el modelo para así predecir la estacionalidad.
+
+En primer lugar, se divide la serie en entrenamiento validación y test para poder calcular los errores.
+
+```{r}
+calls_train <- callsts[1:22174] # 80%
+calls_val <- callsts[22175:24945] # 10%
+calls_test <- callsts[24946:27716] # 10%
+```
+
+A continuación se generan los modelos para las diferentes combinaciones de amplitudes y comprobar posteriormente cuál es el que ofrece un mejor resultado.
+
+```{r}
+# Generar el dataframe para almacenar los resultados de la iteración
+df_frecuencias <- data.frame(
+  amplitud_baja = integer(),
+  amplitud_alta = integer(), 
+  aic = numeric(),
+  rmse = numeric(),
+  mae = numeric()
+)
+
+inicio <- Sys.time()
+
+# Generar el bucle. Tarda aprox 3h
+for (i in 1:10) {
+  # Empezar con la iteración para la frecuencia baja que es la de 169h
+  tx_train_baja <- ts(calls_train, frequency = 1/0.0059022222)
+  # Generar serie de fourier para esta frecuencia
+  xreg_baja <- fourier(tx_train_baja, K = i)
+  colnames(xreg_baja) <- paste("baja", colnames(xreg_baja), sep="_")
+  # Generar la serie de fourier que se usará para la predicción
+  xreg_baja_forecast <- fourier(tx_train_baja, K = i, h=length(calls_val))
+  colnames(xreg_baja_forecast) <- paste("baja", colnames(xreg_baja_forecast), sep="_")
+  # Hacer lo mismo para la frecuencia alta que es la de 84h
+  for (j in 1:10) {
+    it <- paste("La iteración i es: ",i," La iteración j es: ",j)
+    print(it)
+    tx_train_alta <- ts(calls_train, frequency = 1/0.0118400000)
+    xreg_alta <- fourier(tx_train_alta, K = j) %>% as.data.frame()
+    colnames(xreg_alta) <- paste("alta", colnames(xreg_alta), sep="_")
+    xreg_alta_forecast <- fourier(tx_train_alta, K = j, h=length(calls_val))
+    colnames(xreg_alta_forecast) <- paste("alta", colnames(xreg_alta_forecast), sep="_")
+    # Generar el modelo auto arima. Establecer seasonal igual FALSE porque se incluyen las series de fourier como regresores y será lo que capte la estacionalidad
+    modelo <- auto.arima(ts(calls_train, frequency = 1), seasonal = FALSE, xreg = as.matrix(cbind(xreg_baja, xreg_alta)))
+    prediccion <- forecast(modelo, xreg = as.matrix(cbind(xreg_baja_forecast, xreg_alta_forecast)))
+      
+    df_frecuencias <- df_frecuencias %>%
+      rbind(
+        data.frame(
+          amplitud_baja = i,
+          amplitud_alta = j,
+          aicc = modelo$aicc,
+          rmse = sqrt(mean((calls_val - as.numeric(prediccion$mean))^2)),
+          mae = mean(abs(calls_val - as.numeric(prediccion$mean)))
+        )
+      )
+  }
+}
+
+fin <- Sys.time()
+```
+
+Por curiosidad, se imprime el tiempo de ejecución del anterior bucle:
+
+```{r}
+fin-inicio
+```
+
+Las iteraciones se realizan para obtener la amplitud para cada frecuencia que ofrece un mejor resultado. Como tenemos diferentes métricas, se puede comprobar la combinación de amplitudes que ofrece un mejor rendimiento para cada métrica.
+
+```{r}
+df_frecuencias %>%
+ arrange(aicc) %>%
+ head(5)
+```
+
+```{r}
+df_frecuencias %>%
+ arrange(rmse) %>%
+ head(5)
+```
+
+```{r}
+df_frecuencias %>%
+ arrange(mae) %>%
+ head(5)
+```
+
+En primer lugar, se puede observar que el error es bastante elevado, lo que indica que el rendimiento de los modelos en cuanto a una futura predicción dejará mucho que desear, y que el modelo auto arima generado con las series de Fourier como regresores no es suficiente para modelar esta serie. También es reseñable que este modelo se ha generado de forma automática, por lo que podría mejorar tras hacer un estudio analítico de la serie y calcular los coeficiente en los procesos AR y MA.
+
+Se observa que las amplitudes que minimizan los errores para cada métrica son diferentes, por lo que hay que escoger una combinación que minimice todas las métricas lo máximo posible. Veamos como se distribuyen los errores en cada métrica:
+
+```{r}
+# Generar los tres gráficos, uno para cada tipo de error
+mae <- ggplot(data = df_frecuencias, aes(y=mae)) + geom_boxplot()
+aicc <- ggplot(data = df_frecuencias, aes(y=aicc)) + geom_boxplot()
+rmse <- ggplot(data = df_frecuencias, aes(y=rmse)) + geom_boxplot()
+
+# Crear una figura para incluir los tres gráficos
+figure <- ggarrange(mae, aicc, rmse,
+                    labels = c("mae", "aicc", "rmse"),
+                    ncol = 2, nrow = 2)
+figure
+```
+
+Se puede comprobar que en todos los gráficos, las 5 combinaciones de amplitudes que ofrecen mejor resultado para cada métrica, y que se han mostrado anteriormente, se encontrarían en los outlierts inferiores de cada una de ellas. 
+
+El aicc, que es el criterio de información de Akaike, es una medida de la calidad del modelo estadístico para un conjunto de datos dado, pero como se pretende hacer una predicción final lo más exacta posible, es más conveniente fijarse en las métricas mae y rmse, que miden el rendimiento del modelo con el conjunto de validación. Viendo estos resultados, la combinación de amplitudes del modelo que ofrece un mejor resultado en ambas métricas sería una amplitud baja igual a 4 y una amplitud alta igual a 5, que minimiza el rmse, y es la segunda combinación que ofrece un menor mae.
+
+Expuesto el motivo por el que se decide una combinación de amplitudes, solo falta generar la predicción.
+
+```{r}
+# Se especifican las amplitudes
+amplitud_baja <- 4
+amplitud_alta <- 5
+
+# Se generan las series de fourier para la frecuencia baja
+tx_train_baja <- ts(c(calls_train, calls_val), frequency = 1/0.0059022222)
+  xreg_baja <- fourier(tx_train_baja, K = amplitud_baja)
+  colnames(xreg_baja) <- paste("baja", colnames(xreg_baja), sep="_")
+  xreg_baja_forecast <- fourier(tx_train_baja, K = amplitud_baja, h=length(calls_test))
+  colnames(xreg_baja_forecast) <- paste("baja", colnames(xreg_baja_forecast), sep="_")
+
+  # Se generan las series de fourier para la frecuencia alta
+  tx_train_alta <- ts(c(calls_train, calls_val), frequency = 1/0.0118400000)
+    xreg_alta <- fourier(tx_train_alta, K = amplitud_alta) %>% as.data.frame()
+    colnames(xreg_alta) <- paste("alta", colnames(xreg_alta), sep="_")
+    xreg_alta_forecast <- fourier(tx_train_alta, K = amplitud_alta, h=length(calls_test))
+    colnames(xreg_alta_forecast) <- paste("alta", colnames(xreg_alta_forecast), sep="_")
+
+    # Se general el modelo y la predicción
+    arima_calls <- auto.arima(ts(c(calls_train, calls_val), frequency = 1), seasonal = FALSE, xreg = as.matrix(cbind(xreg_baja, xreg_alta)))
+    prediccion <- forecast(arima_calls, xreg = as.matrix(cbind(xreg_baja_forecast, xreg_alta_forecast)))
+```
+
+```{r}
+summary(arima_calls)
+```
+
+Se observa que el resultado es un modelo complejo con parámetro p igual a 5 y q igual a 1.
+
+```{r}
+autoplot(prediccion)
+```
+
+```{r}
+accuracy(as.numeric(prediccion$mean), calls_test)
+```
+
+Los resultados predictivos son lo esperado tras ver el comportamiento del modelo con el conjunto de validación.
+
+A modo de prueba, sería conveniente generar un modelo autoarima para ver su funcionamiento. En este caso, habría que especificarle la frecuencia, por lo que solo captaría la frecuencia que se pasara como parámetro y el generado con las series de Fourier como regresores debería ser más acertado. Debido a la falta de capacidad computacional, no se ha podido llevar a cabo esa prueba. 
+
+En cambio, si que se puede comprobar el comportamiento de la serie con otro tipo de metodología para abordar la estacionalidad múltiple. En este caso se va a aplicar la descomposición stl para múltiples estacionalidades con la función mstl. Para ello, se cogen los conjuntos de entrenamiento y validación, y se añaden las frecuencias de 169 y 84 que se habían detectado en el periodograma.
+
+```{r}
+descomposicion <- mstl(msts(c(calls_train, calls_val), seasonal.periods=c(169,84)))
+autoplot(descomposicion) + ggtitle("Descomposición")
+```
+
+```{r}
+# Se calcula la predicción
+pred_descomposicion <- forecast(descomposicion, h=length(calls_test))
+```
+
+```{r}
+# Se visualiza el resultado
+autoplot(pred_descomposicion)
+```
+```{r}
+# Se calculan métricas de error
+accuracy(as.numeric(pred_descomposicion$mean), calls_test)
+```
+
+Se puede comprobar que en este caso el modelo es capaz de predecir la serie temporal de una forma más exacta que el generado con las series de fourier como regresores.
+
+## Conocimientos avanzados
+
+En esta parte de la PEC se pide analizar la relación entre dos series temporales adjuntadas a la PEC (USUnRate.Rdata y USVSales.Rdata).
+
+- USUnRate: Es el porcentaje de desempleo en Estados Unidos desde 1948 hasta 2019 en frecuencia mensual.
+- USVSales: Es el número de vehículos vendidos en Estados unidos desde 1976 hasta 2019 en miles de unidades en frecuencia mensual.
+
+Se pide determinar la relación entre USVSales y USUnRate si la hubiera y hacer el mejor modelo ARIMA de predicción para USVSales.
+
+En primer lugar, se cargan las series temporales y se modifica la serie de desempleo para que contenga el mismo rango temporal que la de vehículos vendidos para facilitar el análisis.
+
+```{r}
+usvsales <- get(load(file = paste(getwd(), "/USVSales.Rdata", sep="")))
+usunrate_long <- get(load(file = paste(getwd(), "/USUnrate.Rdata", sep="")))
+usunrate <- window(usunrate_long, start = c(1976,1))
+```
+
+El objetivo es encontrar una relación entre las dos series. Se puede intuir que el porcentaje de desempleo influye en los ingresos de la gente por lo que es bastante factible que exista una relación con la venta de vehículos. En primer lugar, hay que comprobar la forma de las series:
+
+```{r}
+df <- data.frame(
+  dates = seq.Date(from = as.Date("1976-01-01"), length.out = length(usunrate), by = "month"),
+  usvsales = as.numeric(usvsales),
+  usunrate = as.numeric(usunrate)
+) %>% na.exclude()
+
+ggplot(df %>%
+         tidyr::gather(key, value, usvsales, usunrate, -dates)) + 
+  geom_line(aes(
+    x=dates, y=log(value)
+  )) + 
+  facet_wrap(~ key, ncol = 1, scales = "free_y")  + ggtitle("Series")
+```
+
+A simple vista parece que los dos picos de la serie temporal del desempleo suceden en torno a los dos puntos más bajos de la serie de ventas de vehículos. Se puede comprobar con otro tipo de gráfico si existe relación entre ambas series.
+
+```{r}
+ggplot(df, aes(x=usvsales, y=usunrate)) + 
+  xlab("Ventas de vehículos") +
+  ylab("Tasa de Desemplo") +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Relación entre series")
+```
+
+Parece que existe una relación clara, de forma que cuanto mayor es la tasa de desemplo, menor es la venta de vehículos.
+
+Para comenzar con el análisis es necesario destacar que además de encontrar significancia estadística en el modelo, hay que asegurarse de que las relaciones que se encuentran son verdaderas. El primer objetivo ahora es conseguir que las series temporales sean estacionarias. 
+
+Se comienza con la serie de la venta de vehículos. Visualizando la gráfica de la misma, hay ciertos tramos donde se aprecia tendencia. Se comprueba si es necesario diferenciar la serie mediante el gráfico Acf:
+
+```{r}
+ggAcf(ts(log(df$usvsales), frequency = 12))
+```
+
+Se pueden apreciar perfectamente las tendencias fuera del intervalo de confianza, y los movimiento sinusoidales que marcan la presencia de estacionalidad en la serie, por lo que es necesario diferenciar la serie. Diferenciación estacional en el lag 12:
+
+```{r}
+usvsales_unseasonal <- diff(ts(log(df$usvsales), frequency = 12), lag = 12)
+```
+
+Se comprueba ahora el Acf de la serie tras la diferenciación estacional: 
+
+```{r}
+ggAcf(usvsales_unseasonal)
+```
+
+Se aprecian movimientos sinusoidales, aunque no muy significativos, y una clara tendencia por lo que es necesario realizar otra diferenciación para eliminar la tendencia.
+
+```{r}
+usvsales_unseasonal_detrended <- diff(usvsales_unseasonal)
+```
+
+Se comprueba el Acf tras la diferenciación para eliminar la tendencia:
+
+```{r}
+ggAcf(usvsales_unseasonal_detrended)
+```
+
+Se puede observar que tanto la estacionalidad como la tendencia parecen haberse elminado. Se visualiza la serie para ver su forma:
+
+```{r}
+autoplot(usvsales_unseasonal_detrended)
+```
+
+También parece estacionaria en el gráfico. Se realiza un test de estacionariedad:
+
+```{r}
+adf.test(usvsales_unseasonal_detrended)
+pp.test(usvsales_unseasonal_detrended)
+```
+
+Se puede rechazar que la serie tenga raíces unitarias, y confirmar que la serie es estacionaria.
+
+Ahora se procede a hacer lo mismo pero con la serie de desempleo:
+
+```{r}
+Acf(ts(df$usunrate, frequency = 12))
+```
+
+Se puede apreciar perfectamente que la serie tiene tendencia ya que decae lentamente hacia 0 y también pequeños movimientos sinusoidales que indican la presencia de estacionalidad en la serie, por lo que es necesario diferenciar la serie. Se comienza con una diferenciación estacional en el lag 12:
+
+```{r}
+usunrate_unseasonal <- diff(ts(df$usunrate, frequency = 12), lag = 12)
+```
+
+Acf tras la diferenciación:
+
+```{r}
+ggAcf(usunrate_unseasonal)
+```
+
+Se aprecia el decaimiento lento hacia 0 por lo que sigue habiendo tendencia
+
+```{r}
+usunrate_unseasonal_detrended <- diff(usunrate_unseasonal)
+```
+
+Acf tras la diferenciación:
+
+```{r}
+ggAcf(usunrate_unseasonal_detrended)
+```
+No parece que siga habiendo ni tendencia ni estacionalidad en la serie. Se visualiza la serie:
+
+```{r}
+autoplot(usunrate_unseasonal_detrended)
+```
+
+Se comprueb ahora con un test de estacionariedad:
+
+```{r}
+adf.test(usunrate_unseasonal_detrended)
+pp.test(usunrate_unseasonal_detrended)
+```
+
+Se puede rechazar que la serie tenga raíces unitarias, y confirmar que la serie es estacionaria.
+
+Una vez se ha confirmado que las series son estacionarias, se buscan las relaciones entre ambas. Para ello, la primera aproximación es hacer un modelo lineal entre estas dos variables, donde hay que recordar que ya no se busca que los residuos sean independientes, si no que habrá información que se modelizará más tarde. Previo al modelo, se puede comprobar el gráfico de cross correlation que halla la correlación entre dos series temporales, cada una desplazada hacia un sitio.
+
+```{r}
+ggCcf(usvsales_unseasonal_detrended, usunrate_unseasonal_detrended)
+```
+
+El único lag positivo que se puede considerar significativo es el lag 12. Es decir, que los efectos del desempleo se notan con un lag de 12 meses. Por lo tanto, se puede generar un modelo lineal para ver la significancia de las variables explicativas.
+
+```{r}
+df$usvsales_est <- c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,usvsales_unseasonal_detrended)
+df$usunrate_est <- c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA, usunrate_unseasonal_detrended)
+df <- na.exclude(df)
+```
+
+```{r}
+regression_model <- lm(usvsales_est ~ usunrate_est + dplyr::lag(df$usunrate_est, 12), data = df)
+summary(regression_model)
+```
+
+Parece que únicamente el lag 12 tienen significancia en el modelo. Por lo tanto, se genera el modelo únicamente con el lag 12 y se comprueban los residuos.
+
+```{r}
+regression_model <- lm(usvsales_est ~ dplyr::lag(df$usunrate_est, 12), data = df)
+summary(regression_model)
+```
+```{r}
+ggtsdisplay(regression_model$residuals, lag.max = 40)
+```
+
+Se comprueba la independencia de los residuos:
+
+```{r}
+Box.test(regression_model$residuals, type = "Ljung-Box")
+```
+
+Se rechaza la independencia de los residuos por lo que es necesario modelos con un modelo ARMA. En vista de los gráficos, se determina que los parámetros del modelo ARMA serán:
+
+- Parámetro q=1 y p=3
+- Parámetros Q=1 y P=2
+
+
+```{r}
+modelo_arma <- Arima(regression_model$residuals, order = c(3,0,1), seasonal = c(2,0,1))
+```
+
+Se comprueba si los residuos de este modelo son independientes:
+
+```{r}
+ggtsdisplay(modelo_arma$residuals)
+```
+
+```{r}
+Box.test(modelo_arma$residuals, type = "Ljung-Box")
+```
+
+El p-valor es alto por lo que se acepta que los residuos son independientes.
+
+Se añade el lag 12 a la dataframe.
+
+```{r}
+df$usunrate_est_lag12 <- dplyr::lag(df$usunrate_est, 12)
+df <- na.exclude(df)
+```
+
+Finalmente, se ejecuta el modelo analítico encontra
+
+fit_analitico <- Arima(ts(df_train$cambio_porcentual, frequency = 12), order = c(1,0,1), seasonal = c(1,0,1), xreg = as.matrix(df_train[c("fdd", "fdd_1")]))
+
+```{r}
+fit_analitico <- Arima(ts(df$usvsales, frequency = 12), order = c(3,1,1), seasonal = c(2,1,1), xreg = as.matrix(df$usunrate_est_lag12))
+summary(fit_analitico)
+```
+
+Observando los resultados, el error del modelo es muy elevado, por lo que su capacidad predictiva en base al regresor es baja, aunque si parece haber una relación en función de los gráficos de correlación de las series una vez estas eran estacionarias.
+
+
