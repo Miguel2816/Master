@@ -1,0 +1,26 @@
+,frequency,bigram,textblob-sentiment,textblob-sentiment-analysis,vader-sentiment,vader-sentiment-analysis
+0,1357,customer service,0.0,Neutral,0.0,Neutral
+1,869,skin tone,0.0,Neutral,0.0,Neutral
+2,842,cheap flights,0.4,Positivo,0.0,Neutral
+3,818,tears joy,0.8,Positivo,0.4404,Positivo
+4,811,face tears,0.0,Neutral,-0.2263,Negativo
+5,786,us cheap,0.4,Positivo,0.0,Neutral
+6,667,flight attendant,0.2,Positivo,0.0,Neutral
+7,552,flight attendants,0.0,Neutral,0.0,Neutral
+8,497,first class,0.25,Positivo,0.0,Neutral
+9,488,smiling face,0.0,Neutral,0.4588,Positivo
+10,479,never fly,-0.4,Negativo,0.0,Neutral
+11,478,crying face,-0.2,Negativo,-0.4767,Negativo
+12,450,flight delayed,0.0,Neutral,-0.2263,Negativo
+13,442,rolling floor,0.0,Neutral,0.0,Neutral
+14,442,floor laughing,0.0,Neutral,0.4939,Positivo
+15,430,year old,0.1,Positivo,0.0,Neutral
+16,428,cancelled flight,0.0,Neutral,-0.25,Negativo
+17,419,loudly crying,-0.2,Negativo,-0.4767,Negativo
+18,396,face smiley,0.0,Neutral,0.4019,Positivo
+19,396,appy face,0.0,Neutral,0.0,Neutral
+20,315,away heading,0.0,Neutral,0.0,Neutral
+21,296,flight cancelled,0.0,Neutral,-0.25,Negativo
+22,296,connecting flight,0.0,Neutral,0.0,Neutral
+23,282,roundtrip travel,0.0,Neutral,0.0,Neutral
+24,273,nited tates,0.0,Neutral,0.0,Neutral

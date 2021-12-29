@@ -1,0 +1,1 @@
+Descargar imágenes para su correcta visualización.

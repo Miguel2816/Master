@@ -1,5 +1,9 @@
-# TFM
+TFM Data Science UAH Miguel Perez
 
-Master Thesis. The topic will be Sentiment Analysis of Airlines based on the communication between the passengers to the airlines done by Twitter.
+Estructura proyecto:
 
-The project will be done during September, October and November and will be defended during December.
+- data: almacenar los tweets recogidos.
+- memoria: desarrollo del trabajo final.
+- models: posibles modelos de ml que se vayan generando.
+- notebooks: generar notebooks para analizar los datos.
+- reports: informes o resultados que se vayan obteniendo.

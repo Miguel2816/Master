@@ -1,0 +1,26 @@
+,frequency,bigram,textblob-sentiment,textblob-sentiment-analysis,vader-sentiment,vader-sentiment-analysis
+0,1732,customer service,0.0,Neutral,0.0,Neutral
+1,1105,skin tone,0.0,Neutral,0.0,Neutral
+2,1089,tears joy,0.8,Positivo,0.4404,Positivo
+3,1074,delta variant,0.0,Neutral,0.0,Neutral
+4,1071,face tears,0.0,Neutral,-0.2263,Negativo
+5,686,hold hours,0.0,Neutral,0.0,Neutral
+6,597,smiling face,0.0,Neutral,0.4588,Positivo
+7,580,crying face,-0.2,Negativo,-0.4767,Negativo
+8,547,first class,0.25,Positivo,0.0,Neutral
+9,519,rolling floor,0.0,Neutral,0.0,Neutral
+10,519,floor laughing,0.0,Neutral,0.4939,Positivo
+11,515,loudly crying,-0.2,Negativo,-0.4767,Negativo
+12,480,need help,0.0,Neutral,0.4019,Positivo
+13,473,ive hold,0.0,Neutral,0.0,Neutral
+14,469,wait time,0.0,Neutral,0.0,Neutral
+15,457,call back,0.0,Neutral,0.0,Neutral
+16,454,change flight,0.0,Neutral,0.0,Neutral
+17,438,air lines,0.0,Neutral,0.0,Neutral
+18,394,please help,0.0,Neutral,0.6124,Positivo
+19,392,delta air,0.0,Neutral,0.0,Neutral
+20,376,flight attendant,0.2,Positivo,0.0,Neutral
+21,374,joy face,0.8,Positivo,0.5859,Positivo
+22,371,light skin,0.4,Positivo,0.0,Neutral
+23,367,clapping hands,0.0,Neutral,0.0,Neutral
+24,359,flight attendants,0.0,Neutral,0.0,Neutral

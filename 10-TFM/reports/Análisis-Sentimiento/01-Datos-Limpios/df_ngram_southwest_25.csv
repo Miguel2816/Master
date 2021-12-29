@@ -1,0 +1,26 @@
+,frequency,bigram,textblob-sentiment,textblob-sentiment-analysis,vader-sentiment,vader-sentiment-analysis
+0,829,flight attendant,0.2,Positivo,0.0,Neutral
+1,760,away heading,0.0,Neutral,0.0,Neutral
+2,729,skin tone,0.0,Neutral,0.0,Neutral
+3,719,customer service,0.0,Neutral,0.0,Neutral
+4,714,boeing ng,0.0,Neutral,0.0,Neutral
+5,578,tears joy,0.8,Positivo,0.4404,Positivo
+6,572,face tears,0.0,Neutral,-0.2263,Negativo
+7,528,red heart,0.0,Neutral,0.6369,Positivo
+8,501,smiling face,0.0,Neutral,0.4588,Positivo
+9,434,flight attendants,0.0,Neutral,0.0,Neutral
+10,343,rolling floor,0.0,Neutral,0.0,Neutral
+11,343,floor laughing,0.0,Neutral,0.4939,Positivo
+12,343,face smiley,0.0,Neutral,0.4019,Positivo
+13,343,appy face,0.0,Neutral,0.0,Neutral
+14,341,flight delayed,0.0,Neutral,-0.2263,Negativo
+15,310,crying face,-0.2,Negativo,-0.4767,Negativo
+16,288,loudly crying,-0.2,Negativo,-0.4767,Negativo
+17,283,heading mih,0.0,Neutral,0.0,Neutral
+18,280,cancelled flight,0.0,Neutral,-0.25,Negativo
+19,262,ng hw,0.0,Neutral,0.0,Neutral
+20,262,hw away,0.0,Neutral,0.0,Neutral
+21,261,fully vaccinated,0.0,Neutral,0.0,Neutral
+22,250,blue heart,0.0,Neutral,0.6369,Positivo
+23,243,light skin,0.4,Positivo,0.0,Neutral
+24,233,companion pass,0.0,Neutral,0.0,Neutral

@@ -1,0 +1,26 @@
+,frequency,bigram,textblob-sentiment,textblob-sentiment-analysis,vader-sentiment,vader-sentiment-analysis
+0,1355,customer service,0.0,Neutral,0.0,Neutral
+1,842,cheap flights,0.4,Positivo,0.0,Neutral
+2,786,us cheap,0.4,Positivo,0.0,Neutral
+3,668,flight attendant,0.2,Positivo,0.0,Neutral
+4,551,flight attendants,0.0,Neutral,0.0,Neutral
+5,496,first class,0.25,Positivo,0.0,Neutral
+6,480,never fly,-0.4,Negativo,0.0,Neutral
+7,451,flight delayed,0.0,Neutral,-0.2263,Negativo
+8,429,year old,0.1,Positivo,0.0,Neutral
+9,428,cancelled flight,0.0,Neutral,-0.25,Negativo
+10,309,away heading,0.0,Neutral,0.0,Neutral
+11,296,flight cancelled,0.0,Neutral,-0.25,Negativo
+12,295,connecting flight,0.0,Neutral,0.0,Neutral
+13,282,roundtrip travel,0.0,Neutral,0.0,Neutral
+14,263,vice versa,0.0,Neutral,0.0,Neutral
+15,260,worst airline,-1.0,Negativo,-0.6249,Negativo
+16,258,canceled flight,0.0,Neutral,0.0,Neutral
+17,245,wear mask,0.0,Neutral,0.0,Neutral
+18,244,please help,0.0,Neutral,0.6124,Positivo
+19,235,spirit airlines,0.0,Neutral,0.1779,Positivo
+20,232,call back,0.0,Neutral,0.0,Neutral
+21,229,trying get,0.0,Neutral,0.0,Neutral
+22,229,new york,0.13636363636363635,Positivo,0.0,Neutral
+23,229,flight canceled,0.0,Neutral,0.0,Neutral
+24,222,versa roundtrip,0.0,Neutral,0.0,Neutral
